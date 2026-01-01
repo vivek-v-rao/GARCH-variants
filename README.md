@@ -1,7 +1,73 @@
-# GARCH-variants
-Compare the fit of many GARCH models to return data. Most are from the [arch](https://pypi.org/project/arch/) package, but a few are coded by hand.
+# xgarch_skew_data.py
 
-`python xgarch_skew_data.py --optimizer bfgs` gives
+`xgarch_skew_data.py` is a command-line tool for fitting a large menu of GARCH-family volatility models to historical price data. It automates return computation, multiple model estimations (both custom implementations and `arch`-package models), information-criterion comparisons, and reporting of diagnostics such as standardized residual stats, conditional standard deviations, and correlation matrices.
+
+## Features
+- Supports an extensive list of models: NAGARCH, IGARCH, ST-GARCH, standard/ skewed GARCH, EGARCH, GJR, and a constant-volatility benchmark.
+- Fits models with user-selectable optimizers (`nelder-mead` or `bfgs`) for the custom estimators.
+- Generates annualized return summaries, autocorrelations, and return correlation matrices.
+- Produces per-model tables with parameter estimates, log-likelihoods, AICC/BIC scores, and ranks.
+- Optionally writes conditional-volatility series, conditional SD correlation matrices, and aggregated parameter CSVs for downstream analysis.
+
+## Requirements
+- Python 3.9+ (tested on CPython).
+- Packages: `numpy`, `pandas`, `arch` (via `garch_util`), plus local modules `garch_util.py`, `stats_util.py`, `returns_util.py`, and `minimize.py` in the same repository.
+
+Install third-party dependencies (if not already):  
+```bash
+python -m pip install numpy pandas arch
+```
+
+## Usage
+Run the script from the repository root so it can import the helper modules:
+```bash
+python xgarch_skew_data.py --file prices.csv --columns SPY,EFA,EEM,TLT
+```
+
+Key arguments:
+- `--file`: Path to the CSV containing a date column + price columns (default `prices.csv`).
+- `--columns`: Comma-separated subset of columns to analyze (default: all price columns).
+- `--models`: Comma-separated model list (defaults to a curated set; see `ALLOWED_MODELS` inside the script).
+- `--returns`: `log` or `simple` (default `log`), combined with `--scale` to control units.
+- `--optimizer`: `nelder-mead` (default) or `bfgs` for custom models.
+- `--max-columns`: Limit number of assets processed.
+- `--min-rows`: Minimum usable returns required (default 250).
+- `--no-demean`: Keep raw returns instead of de-meaning prior to fitting.
+- `--no-resid-stats`, `--no-cond-sd-stats`: Disable residual or conditional-SD summaries.
+- `--sd-corr` / `--no-sd-corr`: Toggle writing conditional SD correlation matrices (`sd_corr.csv`).
+- `--vols-csv` / `--no-vols-csv`: Toggle per-asset conditional-volatility CSVs (default on).
+- `--vols-dir`: Custom directory for the volatility CSVs.
+- `--param-csv`: Filename for aggregated parameter summaries (`model_params.csv` by default); use `--no-param-csv` to disable.
+
+Run `python xgarch_skew_data.py --help` to see the full list of switches.
+
+## Typical Workflow
+1. Prepare `prices.csv` with one header row: first column dates (ISO format recommended), subsequent columns for each asset price series.
+2. Execute the script specifying assets/models of interest.
+3. Inspect console output for annualized return stats, model comparison tables, and per-asset rank summaries.
+4. Review generated artifacts:
+   - `*_vols.csv`: Conditional-volatility time series (if enabled).
+   - `sd_corr.csv`: Correlation matrices of conditional SDs across models (if enabled).
+   - `model_params.csv`: Combined parameter table suited for spreadsheets or further analysis.
+
+## Notes
+- Custom models (`nagarch_*`, `igarch_*`, `st_*`, `constant_vol`) rely on routines inside `garch_util.py`.
+- To accelerate runs, adjust `minimize.maxiter_max` or `minimize.fatol` within the script (already set to moderately low defaults).
+- For reproducibility, ensure the helper modules (`garch_util`, `stats_util`, `returns_util`, `minimize`) are kept in sync with this script.
+
+## Example Command
+```bash
+python xgarch_skew_data.py \
+  --file prices.csv \
+  --columns SPY,EFA,EEM \
+  --models nagarch_skew_student_t,garch_student_t,egarch_student_t \
+  --optimizer bfgs \
+  --sd-corr \
+  --param-csv model_params.csv
+```
+This fits three models to the specified assets, uses BFGS for the custom optimizer, writes conditional SD correlations, and saves the parameter summary CSV.
+
+Output of `python xgarch_skew_data.py --optimizer bfgs` for the included `prices.csv` is
 
 ```
 optimizer: bfgs
