@@ -1,9 +1,10 @@
-# xgarch_skew_data.py
+# GARCH variants
 
 `xgarch_skew_data.py` is a command-line tool for fitting a large menu of GARCH-family volatility models to historical price data. It automates return computation, multiple model estimations (both custom implementations and `arch`-package models), information-criterion comparisons, and reporting of diagnostics such as standardized residual stats, conditional standard deviations, and correlation matrices.
 
 ## Features
-- Supports an extensive list of models: NAGARCH, IGARCH, ST-GARCH, standard/ skewed GARCH, EGARCH, GJR, and a constant-volatility benchmark.
+- Supports an extensive list of models: GARCH, EGARCH, asymmetric GARCH models such as NAGARCH and GJR GARCH, IGARCH, and a constant-volatility benchmark. Most are from the [arch](https://pypi.org/project/arch/) package but a few such as NAGARCH are hand coded.
+- Allows the distribution of return innovations to be normal, Student's t, or skewed Student's t.
 - Fits models with user-selectable optimizers (`nelder-mead` or `bfgs`) for the custom estimators.
 - Generates annualized return summaries, autocorrelations, and return correlation matrices.
 - Produces per-model tables with parameter estimates, log-likelihoods, AICC/BIC scores, and ranks.
