@@ -121,12 +121,14 @@ def parse_args() -> argparse.Namespace:
                         help="Path for aggregated model parameter CSV")
     parser.add_argument("--no-param-csv", action="store_true",
                         help="Disable writing the parameter summary CSV")
+    parser.add_argument("--optimizer", choices=("nelder-mead", "bfgs"), default="nelder-mead",
+                        help="Optimizer for custom models (nelder-mead or bfgs)")
     return parser.parse_args()
 
 
 def main() -> int:
     """Coordinate data loading, model fitting, and reporting."""
-    minimize.maxiter_max = 100 # reducing this boosts speed but may worsen model fits
+    minimize.maxiter_max = 10 # reducing this boosts speed but may worsen model fits
     minimize.fatol = 1e-2 # Function Value Absolute Tolerance -- increase this to boost speed
     param_headers = ["symbol", "model", "uncond_sd", "mu", "omega", "alpha", "beta", "gamma", "shift",
                      "skew", "dof", "loglik", "n_params", "AICC", "BIC", "loglik_rank", "AICC_rank",
@@ -168,7 +170,10 @@ def main() -> int:
     prices = raw.iloc[:, 1:]
     prices.columns = [col.strip() for col in prices.columns]
     n_rows, n_cols = prices.shape
-    print("max Nelder-Mead iterations, function tolerance:", minimize.maxiter_max, minimize.fatol)
+    print("optimizer:", args.optimizer)
+    if args.optimizer == "nelder-mead":
+        print("max Nelder-Mead iterations, function tolerance:",
+            minimize.maxiter_max, minimize.fatol)
     print(f"loaded price data from {args.file} with {n_rows} rows and {n_cols} columns")
     if date_col.notna().any():
         first = date_col.dropna().iloc[0]
@@ -338,11 +343,11 @@ def main() -> int:
                 elif base == "gjr":
                     row = fit_arch_model(adjusted_returns, "gjr", dist)
                 elif base == "igarch":
-                    row = fit_igarch_model(adjusted_returns, dist)
+                    row = fit_igarch_model(adjusted_returns, dist, optimizer=args.optimizer)
                 elif base == "nagarch":
-                    row = fit_nagarch_model(adjusted_returns, dist)
+                    row = fit_nagarch_model(adjusted_returns, dist, optimizer=args.optimizer)
                 elif base == "st":
-                    row = fit_st_model(adjusted_returns, dist)
+                    row = fit_st_model(adjusted_returns, dist, optimizer=args.optimizer)
                 else:
                     continue
             except Exception as exc:
